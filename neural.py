@@ -16,6 +16,10 @@ class Network:
     def weights(self):
         return self.__weights
 
+    @property
+    def biases(self):
+        return self.__biases
+
     def calculate(self, *_input):
         output = np.array(_input)
         nodes = [output]
@@ -43,11 +47,14 @@ class Network:
         biases_grads = np.array([np.ones((self.__size[i])) for i in range(1, len(self.__size))])
         for i in range(len(weights_grads[-1])):
             weights_grads[-1][i] = np.multiply(last_lay, nodes[-2][i])
+        biases_grads[-1] = last_lay
         for i in range(len(weights_grads) - 2, -1, -1):
+            bias_sum = sum(biases_grads[i + 1])
+            biases_grads[i] = np.multiply(np.multiply(nodes[i + 1], np.subtract(1, nodes[i + 1])), bias_sum)
             for j in range(len(weights_grads[i])):
                 for k in range(len(weights_grads[i][j])):
                     weights_grads[i][j][k] = np.multiply(np.sum(np.multiply(weights_grads[i + 1][k], np.subtract(1, nodes[i + 1][k]))), nodes[i][j])
-        return weights_grads
+        return weights_grads, biases_grads
 
     def learn(self, inputs, exp_outs, rate):
         assert len(inputs) == len(exp_outs)
@@ -58,15 +65,19 @@ class Network:
             np.add(errors, self.error_grad(inputs[i], exp_outs[i]))
         nodes = np.divide(nodes, len(inputs))
         errors = np.divide(errors, len(inputs))
+        print('Error: {}'.format(errors))
 
-        self.__weights = np.subtract(self.__weights, np.multiply(rate, self.grad(nodes, errors)))
+        grad = self.grad(nodes, errors)
+        self.__weights = np.subtract(self.__weights, np.multiply(rate, grad[0]))
+        self.__biases = np.subtract(self.__biases, np.multiply(rate, grad[1]))
 
-net = Network(3,4,3)
-for i in range(100):
-    # print(net.weights)
-    before_err = net.error([3,-60,0], [1,0.5,0.89])
-    net.learn([[3,-60,0]], [[1,0.5,0.89]], 0.1)
-    # print(net.weights)
-    now_err = net.error([3,-60,0], [1,0.5,0.89])
-    print('diff: {}'.format(now_err - before_err))
-    print('curr err: {}'.format(now_err))
+
+net = Network(1,2,4,8,4,2,1)
+
+batch = [np.random.standard_normal((1, )) for _ in range(10000)]
+exp_outs = [[int(num > 0.5)] for num in batch]
+for b, e in zip(batch, exp_outs):
+    net.learn([b], [e], 1)
+
+print(net.calculate(0)[-1])
+print(net.calculate(1)[-1])
