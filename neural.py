@@ -57,13 +57,8 @@ class Network:
         return weights_grads, biases_grads
 
     def learn(self, inputs, exp_outs, rate):
-        assert len(inputs) == len(exp_outs)
-        nodes = self.calculate(*inputs[0])
-        errors = self.error_grad(inputs[0], exp_outs[0])
-        for i in range(1, len(inputs)):
-            np.add(nodes, self.calculate(*inputs[i]))
-            np.add(errors, self.error_grad(inputs[i], exp_outs[i]))
-        nodes = np.divide(nodes, len(inputs))
+        nodes = self.calculate(*inputs)
+        errors = self.error_grad(inputs, exp_outs)
         errors = np.divide(errors, len(inputs))
         print('Error: {}'.format(errors))
 
@@ -74,10 +69,12 @@ class Network:
 
 net = Network(1,2,4,8,4,2,1)
 
-batch = [np.random.standard_normal((1, )) for _ in range(10000)]
-exp_outs = [[int(num > 0.5)] for num in batch]
-for b, e in zip(batch, exp_outs):
-    net.learn([b], [e], 1)
+for _ in range(10000):
+    inp = np.random.standard_normal((1, ))
+    exp_out = [int(inp > 0.5)]
+    net.learn(inp, exp_out, 1)
 
 print(net.calculate(0)[-1])
 print(net.calculate(1)[-1])
+print(net.calculate(2)[-1])
+print(net.calculate(-0.4)[-1])
